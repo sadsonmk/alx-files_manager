@@ -20,7 +20,7 @@ async function postNew(req, res) {
 
   const hashedPswd = sha1(password);
   const newUser = await dbClient.client.db().collection('users').insertOne({ email, password: hashedPswd });
-  return res.status(201).json({ id: newUser.ObjectId, email });
+  return res.status(201).json({ id: newUser.insertedId, email });
 }
 
 module.exports = {
