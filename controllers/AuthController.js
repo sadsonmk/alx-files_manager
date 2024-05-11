@@ -27,7 +27,7 @@ async function getConnect(req, res) {
   const token = uuidv4();
   const key = `auth_${token}`;
   await redisClient.set(key, user._id.toString(), 24 * 60 * 60);
-  return res.status(200).json({ token: '155342df-2399-41da-9e8c-458b6ac52a0c' });
+  return res.status(200).json({ token });
 }
 
 async function getDisconnect(req, res) {
