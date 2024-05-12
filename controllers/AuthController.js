@@ -1,4 +1,4 @@
-const { v4: uuidv4 } = require('uuid');
+const uuidv4 = require('uuid').v4;
 const sha1 = require('sha1');
 const dbClient = require('../utils/db');
 const redisClient = require('../utils/redis');
