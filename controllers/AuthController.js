@@ -9,8 +9,12 @@ async function getConnect(req, res) {
   if (!authHeader) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+  const [authType, authString] = authHeader.split(' ');
 
-  const [email, password] = Buffer.from(authHeader.split(' '), 'base64').toString().split(':');
+  if (authType !== 'Basic' || !authString) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const [email, password] = Buffer.from(authString, 'base64').toString().split(':');
   const hashedPswd = sha1(password);
 
   const user = await dbClient.client.db().collection('users').findOne({ email, password: hashedPswd });
