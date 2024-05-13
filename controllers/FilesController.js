@@ -32,7 +32,7 @@ async function postUpload(req, res) {
   }
 
   if (parentId !== 0) {
-    const file = await dbClient.client.db().collection('files').findOne({ _id: parentId });
+    const file = await dbClient.client.db().collection('files').findOne({ parentId });
     if (!file) {
       return res.status(400).json({ error: 'Parent not found' });
     }
