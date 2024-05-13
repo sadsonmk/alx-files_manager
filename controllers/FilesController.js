@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const uuidv4 = require('uuid').v4;
 const dbClient = require('../utils/db');
 const redisClient = require('../utils/redis');
@@ -44,22 +45,25 @@ async function postUpload(req, res) {
     return res.status(400).json({ error: 'Missing data' });
   }
 
+  let localPath = null;
+
+  if (type === 'folder') {
+    const folderPath = FOLDER_PATH;
+    if (!fs.existsSync(folderPath)) {
+      fs.mkdirSync(folderPath, { recursive: true });
+    }
+    const filename = uuidv4();
+    localPath = path.join(folderPath, filename);
+    fs.writeFileSync(localPath, data, 'base64');
+  }
+
   const newFile = {
-    userId: userId.toStirng(),
     name,
     type,
     isPublic,
     parentId,
+    userId: userId.toStirng(),
   };
-
-  if (type === 'folder') {
-    const results = await dbClient.client.db().collection('files').insertOne(newFile);
-    newFile._id = results.insertedId;
-    return res.status(201).json(newFile);
-  }
-
-  const localPath = `${FOLDER_PATH}/${uuidv4()}`;
-  fs.writeFile(localPath, data, { encoding: 'base64' });
 
   newFile.localPath = localPath;
   const result = await dbClient.client.db().collection('files').insertOne(newFile);
