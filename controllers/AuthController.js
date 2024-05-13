@@ -25,8 +25,7 @@ async function getConnect(req, res) {
 
   const token = uuidv4();
   const key = `auth_${token}`;
-  const duration = (24 * 60 * 60);
-  await redisClient.set(key, user._id.toString(), duration);
+  await redisClient.set(key, user._id.toString(), 24 * 60 * 60);
   return res.status(200).json({ token });
 }
 
