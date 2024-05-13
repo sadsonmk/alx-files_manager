@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
+const uuidv4 = require('uuid').v4;
 const dbClient = require('../utils/db');
 const redisClient = require('../utils/redis');
 
@@ -59,11 +59,7 @@ async function postUpload(req, res) {
   }
 
   const localPath = `${FOLDER_PATH}/${uuidv4()}`;
-  fs.writeFile(localPath, data, { encoding: 'base64' }, (err) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  });
+  fs.writeFile(localPath, data, { encoding: 'base64' });
 
   newFile.localPath = localPath;
   const result = await dbClient.client.db().collection('files').insertOne(newFile);
