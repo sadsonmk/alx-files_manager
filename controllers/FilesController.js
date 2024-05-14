@@ -62,6 +62,9 @@ async function postUpload(req, res) {
   }
 
   const filename = uuidv4();
+  if (!fs.existsSync(FOLDER_PATH)) {
+    fs.mkdirSync(FOLDER_PATH, { recursive: true });
+  }
   const localPath = path.join(FOLDER_PATH, filename);
   writeFilePromise(localPath, data, { encoding: 'base64' })
     .then(async () => {
