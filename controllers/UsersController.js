@@ -43,7 +43,7 @@ async function getMe(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  return res.json({ id: user._id, email: user.email });
+  return res.status(200).json({ id: user._id, email: user.email });
 }
 
 module.exports = {
