@@ -62,7 +62,7 @@ async function postUpload(req, res) {
     await dbClient.client.db().collection('files').insertOne(newFile);
     return res.status(201).json({
       id: newFile._id,
-      userId: newFile.UserId,
+      userId: newFile.userId,
       name: newFile.name,
       type: newFile.type,
       isPublic: newFile.isPublic,
@@ -89,7 +89,7 @@ async function postUpload(req, res) {
   });
   return res.status(201).json({
     id: newFile._id,
-    userId: newFile.UserId,
+    userId: newFile.userId,
     name: newFile.name,
     type: newFile.type,
     isPublic: newFile.isPublic,
