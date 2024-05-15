@@ -232,18 +232,19 @@ async function putUnpublish(req, res) {
 
 async function getFile(req, res) {
   const { id } = req.params;
-  const { size } = req.query;
   const file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(id) });
   if (!file) return res.status(404).json({ error: 'Not found' });
 
   const { userId, isPublic, type } = file;
   const key = `auth_${userId}`;
   const user = await redisClient.get(key);
-  if ((!user && !isPublic) || (user && userId !== user && !isPublic)) return res.status(404).json({ error: 'Not found' });
+  if ((!user && !isPublic) || (user && userId !== user && !isPublic)) {
+    return res.status(404).json({ error: 'Not found' });
+  }
 
   if (type === 'folder') return res.status(400).json({ error: 'A folder doesn\'t have content' });
 
-  const path = size === 0 ? file.localPath : `${file.localPath}_${size}`;
+  const path = file.localPath;
 
   try {
     const data = fs.readFileSync(path);
