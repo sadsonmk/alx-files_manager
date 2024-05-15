@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const uuidv4 = require('uuid').v4;
+const mime = require('mime-types');
 const { ObjectId } = require('mongodb');
 const Queue = require('bull');
 const dbClient = require('../utils/db');
@@ -229,10 +230,36 @@ async function putUnpublish(req, res) {
   });
 }
 
+async function getFile(req, res) {
+  const { id } = req.params;
+  const { size } = req.query;
+  const file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(id) });
+  if (!file) return res.status(404).json({ error: 'Not found' });
+
+  const { userId, isPublic, type } = file;
+  const key = `auth_${userId}`;
+  const user = await redisClient.get(key);
+  if ((!user && !isPublic) || (user && userId !== user && !isPublic)) return res.status(404).json({ error: 'Not found' });
+
+  if (type === 'folder') return res.status(400).json({ error: 'A folder doesn\'t have content' });
+
+  const path = size === 0 ? file.localPath : `${file.localPath}_${size}`;
+
+  try {
+    const data = fs.readFileSync(path);
+    const mimeType = mime.contentType(file.name);
+    res.setHeader('Content-Type', mimeType);
+    return res.status(200).json(data);
+  } catch (err) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+}
+
 module.exports = {
   postUpload,
   getShow,
   getIndex,
   putPublish,
   putUnpublish,
+  getFile,
 };
