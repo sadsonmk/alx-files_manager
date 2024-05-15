@@ -181,13 +181,22 @@ async function putPublish(req, res) {
   if (!userId) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+  const user = await dbClient.client.db().collection('users').findOne({ _id: ObjectId(userId) });
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const file = await dbClient.client.db().collection('files').findOne({ _id: id, userId });
-  if (!file) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  file.isPublic = true;
-  return res.status(200).json(file);
+  let file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(id), userId: user._id });
+  if (!file) return res.status(404).json({ error: 'Not found' });
+
+  await dbClient.client.db().collection('files').updateOne({ _id: ObjectId(id) }, { $set: { isPublic: true } });
+  file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(id), userId: user._id });
+  return res.status(200).json({
+    id: file._id,
+    userId: file.userId,
+    name: file.name,
+    type: file.type,
+    isPublic: file.isPublic,
+    parentId: file.parentId,
+  });
 }
 
 async function putUnpublish(req, res) {
@@ -202,12 +211,22 @@ async function putUnpublish(req, res) {
   if (!userId) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  const file = await dbClient.client.db().collection('files').findOne({ _id: id, userId });
-  if (!file) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  file.isPublic = false;
-  return res.status(200).json(file);
+  const user = await dbClient.client.db().collection('users').findOne({ _id: ObjectId(userId) });
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  let file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(id), userId: user._id });
+  if (!file) return res.status(404).json({ error: 'Not found' });
+
+  await dbClient.client.db().collection('files').updateOne({ _id: ObjectId(id) }, { $set: { isPublic: false } });
+  file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(id), userId: user._id });
+  return res.status(200).json({
+    id: file._id,
+    userId: file.userId,
+    name: file.name,
+    type: file.type,
+    isPublic: file.isPublic,
+    parentId: file.parentId,
+  });
 }
 
 module.exports = {
