@@ -4,12 +4,12 @@ const dbClient = require('../utils/db');
 const redisClient = require('../utils/redis');
 
 async function getConnect(req, res) {
-  const authHeader = req.headers.Authorization;
+  const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
 
   const authString = authHeader.split(' ')[1];
   if (!authString) return res.status(401).json({ error: 'Unauthorized' });
-  const [email, password] = Buffer.from(authString, 'base64').toString('utf8').split(':');
+  const [email, password] = Buffer.from(authString, 'base64').toString().split(':');
   if (!email || !password) return res.status(401).json({ error: 'Unauthorized' });
   const hashedPswd = sha1(password);
 
