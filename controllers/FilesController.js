@@ -110,12 +110,21 @@ async function getShow(req, res) {
   if (!userId) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+  const user = await dbClient.client.db().collection('users').findOne({ _id: ObjectId(userId) });
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(id), userId });
+  const file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(id), userId: user._id });
   if (!file) {
     return res.status(404).json({ error: 'Not found' });
   }
-  return res.status(200).json(file);
+  return res.status(200).json({
+    id: file._id,
+    userId: file.userId,
+    name: file.name,
+    type: file.type,
+    isPublic: file.isPublic,
+    parentId: file.parentId,
+  });
 }
 
 async function getIndex(req, res) {
@@ -129,10 +138,13 @@ async function getIndex(req, res) {
   const key = `auth_${token}`;
   const userId = await redisClient.get(key);
 
-  if (userId) {
+  if (!userId) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-
+  if (parentId !== 0) {
+    const file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(parentId) });
+    if (!file) return res.status(200).json([]);
+  }
   const pipeline = [
     { $match: { userId, parentId: parentId.toString() } },
     { $skip: page * 20 },
