@@ -7,9 +7,7 @@ const UsersController = require('../controllers/UsersController');
 const AuthController = require('../controllers/AuthController');
 const FilesController = require('../controllers/FilesController');
 
-const routesController = (app) => {
 
-app.use('/', router);
 router.get('/status', AppController.getStatus);
 router.get('/stats', AppController.getStats);
 router.post('/users', UsersController.postNew);
@@ -22,6 +20,5 @@ router.get('/files', FilesController.getIndex);
 router.put('/files/:id/publish', FilesController.putPublish);
 router.put('/files/:id/publish', FilesController.putUnpublish);
 //router.get('/files/:id/data', FilesController.getFile);
-};
 
-module.exports = routesController;
+module.exports = router;

@@ -8,7 +8,7 @@ const routesController = require('./routes/index');
 
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(express.json());
-routesController(app);
+app.use('/', router);
 
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}`);
