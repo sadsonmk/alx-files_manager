@@ -143,7 +143,7 @@ async function getIndex(req, res) {
   }
   if (parentId !== 0) {
     const file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(parentId) });
-    if (!file) return res.status(200).json([]);
+    if (!file || file.type !== 'folder') return res.status(200).send([]);
   }
   const aggr = { $and: [{ parentId }] };
   let pipeline = [
@@ -153,8 +153,20 @@ async function getIndex(req, res) {
   ];
   if (parentId === 0) pipeline = [{ $skip: page * 20 }, { $limit: 20 }];
 
-  const files = await dbClient.client.db().collection('files').aggregate(pipeline).toArray();
-  return res.status(200).json(files);
+  const files = await dbClient.client.db().collection('files').aggregate(pipeline);
+  const fileArray = [];
+  await files.forEach((file) => {
+    const fileObj = {
+      id: file._id,
+      userId: file.userId,
+      name: file.name,
+      type: file.type,
+      isPublic: file.isPublic,
+      parentId: file.parentId,
+    };
+    fileArray.push(fileObj);
+  });
+  return res.status(200).json(fileArray);
 }
 
 async function putPublish(req, res) {
