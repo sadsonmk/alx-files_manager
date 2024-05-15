@@ -85,20 +85,20 @@ async function getShow(req, res) {
   const token = req.headers['x-token'];
 
   if (!token) {
-    res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
   const key = `auth_${token}`;
   const userId = await redisClient.get(key);
 
   if (!userId) {
-    res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const file = await dbClient.client.db().collection('files').findOne({ _id: id, userId });
   if (!file) {
-    res.status(404).json({ error: 'Not found' });
+    return res.status(404).json({ error: 'Not found' });
   }
-  res.status(200).json(file);
+  return res.status(200).json(file);
 }
 
 async function getIndex(req, res) {
