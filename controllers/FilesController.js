@@ -145,14 +145,15 @@ async function getIndex(req, res) {
     const file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(parentId) });
     if (!file) return res.status(200).json([]);
   }
-  const pipeline = [
-    { $match: { userId, parentId: parentId.toString() } },
+  const aggr = { $and: [{ parentId }] };
+  let pipeline = [
+    { $match: aggr },
     { $skip: page * 20 },
     { $limit: 20 },
   ];
+  if (parentId === 0) pipeline = [{ $skip: page * 20 }, { $limit: 20 }];
 
   const files = await dbClient.client.db().collection('files').aggregate(pipeline).toArray();
-
   return res.status(200).json(files);
 }
 
