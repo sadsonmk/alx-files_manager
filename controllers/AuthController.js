@@ -4,7 +4,7 @@ const dbClient = require('../utils/db');
 const redisClient = require('../utils/redis');
 
 async function getConnect(req, res) {
-  const authHeader = req.headers['Authorization'];
+  const authHeader = req.headers.Authorization;
 
   if (!authHeader) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -14,7 +14,7 @@ async function getConnect(req, res) {
   if (authType !== 'Basic' || !authString) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  const [email, password] = Buffer.from(authString, 'base64').toString().split(':');
+  const [email, password] = Buffer.from(authString, 'base64').toString('utf8').split(':');
   const hashedPswd = sha1(password);
 
   const user = await dbClient.client.db().collection('users').findOne({ email, password: hashedPswd });
@@ -23,7 +23,7 @@ async function getConnect(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const token = uuidv4().toString();
+  const token = uuidv4();
   const key = `auth_${token}`;
   const duration = (24 * 60 * 60);
   await redisClient.set(key, user._id.toString(), duration);
