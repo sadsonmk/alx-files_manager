@@ -2,14 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const uuidv4 = require('uuid').v4;
 const { ObjectId } = require('mongodb');
-const { promisify } = require('util');
+const Queue = require('bull');
 const dbClient = require('../utils/db');
 const redisClient = require('../utils/redis');
 
-const writeFilePromise = promisify(fs.writeFile);
 const FOLDER_PATH = process.env.FOLDER_PATH || '/tmp/files_manager';
 
 async function postUpload(req, res) {
+  const docQ = new Queue('docQ');
   const token = req.headers['x-token'];
   const {
     name, type, parentId = 0, isPublic = false, data,
@@ -74,23 +74,27 @@ async function postUpload(req, res) {
   if (!fs.existsSync(FOLDER_PATH)) {
     fs.mkdirSync(FOLDER_PATH, { recursive: true });
   }
+  const datab = Buffer.from(data, 'base64');
   const localPath = path.join(FOLDER_PATH, filename);
-  writeFilePromise(localPath, data, { encoding: 'base64' })
-    .then(async () => {
-      newFile.localPath = localPath;
-      await dbClient.client.db().collection('files').insertOne(newFile);
-      return res.status(201).json({
-        id: newFile._id,
-        userId: newFile.UserId,
-        name: newFile.name,
-        type: newFile.type,
-        isPublic: newFile.isPublic,
-        parentId: newFile.parentId,
-      });
-    })
-    .catch((err) => res.status(500).json({ error: err.messge }));
+  fs.writeFile(localPath, datab, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    return true;
+  });
+  newFile.localPath = localPath;
+  await dbClient.client.db().collection('files').insertOne(newFile);
 
-  return true;
+  docQ.add({
+    userId: newFile.userId,
+    docId: newFile._id,
+  });
+  return res.status(201).json({
+    id: newFile._id,
+    userId: newFile.UserId,
+    name: newFile.name,
+    type: newFile.type,
+    isPublic: newFile.isPublic,
+    parentId: newFile.parentId,
+  });
 }
 
 async function getShow(req, res) {
@@ -107,7 +111,7 @@ async function getShow(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const file = await dbClient.client.db().collection('files').findOne({ _id: id, userId });
+  const file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(id), userId });
   if (!file) {
     return res.status(404).json({ error: 'Not found' });
   }
