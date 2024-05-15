@@ -10,6 +10,7 @@ async function getConnect(req, res) {
   const authString = authHeader.split(' ')[1];
   if (!authString) return res.status(401).json({ error: 'Unauthorized' });
   const [email, password] = Buffer.from(authString, 'base64').toString('utf8').split(':');
+  if (!email || !password) return res.status(401).json({ error: 'Unauthorized' });
   const hashedPswd = sha1(password);
 
   const user = await dbClient.client.db().collection('users').findOne({ email, password: hashedPswd });
