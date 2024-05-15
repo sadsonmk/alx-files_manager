@@ -37,7 +37,7 @@ async function postUpload(req, res) {
   }
 
   if (parentId !== 0) {
-    const file = await dbClient.client.db().collection('files').findOne({ parentId });
+    const file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(parentId) });
     if (!file) {
       return res.status(400).json({ error: 'Parent not found' });
     }
@@ -55,13 +55,19 @@ async function postUpload(req, res) {
     type,
     isPublic,
     parentId,
-    userId,
+    userId: user._id,
   };
 
   if (type === 'folder') {
-    const result = await dbClient.client.db().collection('files').insertOne(newFile);
-    newFile.id = result.insertedId;
-    return res.status(201).json(newFile);
+    await dbClient.client.db().collection('files').insertOne(newFile);
+    return res.status(201).json({
+      id: newFile._id,
+      userId: newFile.UserId,
+      name: newFile.name,
+      type: newFile.type,
+      isPublic: newFile.isPublic,
+      parentId: newFile.parentId,
+    });
   }
 
   const filename = uuidv4();
@@ -72,12 +78,19 @@ async function postUpload(req, res) {
   writeFilePromise(localPath, data, { encoding: 'base64' })
     .then(async () => {
       newFile.localPath = localPath;
-      const result = await dbClient.client.db().collection('files').insertOne(newFile);
-      newFile.id = result.insertedId;
-      return res.status(201).json(newFile);
+      await dbClient.client.db().collection('files').insertOne(newFile);
+      return res.status(201).json({
+        id: newFile._id,
+        userId: newFile.UserId,
+        name: newFile.name,
+        type: newFile.type,
+        isPublic: newFile.isPublic,
+        parentId: newFile.parentId,
+      });
     })
     .catch((err) => res.status(500).json({ error: err.messge }));
-  return res.status(201);
+
+  return true;
 }
 
 async function getShow(req, res) {
