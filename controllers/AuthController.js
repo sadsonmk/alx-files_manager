@@ -5,6 +5,7 @@ const redisClient = require('../utils/redis');
 
 async function getConnect(req, res) {
   const authHeader = req.headers.Authorization;
+  if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
 
   const authString = authHeader.split(' ')[1];
 
