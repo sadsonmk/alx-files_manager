@@ -3,14 +3,14 @@ const path = require('path');
 const uuidv4 = require('uuid').v4;
 const mime = require('mime-types');
 const { ObjectId } = require('mongodb');
-const Queue = require('bull');
+const Bull = require('bull');
 const dbClient = require('../utils/db');
 const redisClient = require('../utils/redis');
 
 const FOLDER_PATH = process.env.FOLDER_PATH || '/tmp/files_manager';
+const fileQueue = new Bull('fileQueue');
 
 async function postUpload(req, res) {
-  const docQ = new Queue('docQ');
   const token = req.headers['x-token'];
   const {
     name, type, parentId = 0, isPublic = false, data,
@@ -84,10 +84,12 @@ async function postUpload(req, res) {
   newFile.localPath = localPath;
   await dbClient.client.db().collection('files').insertOne(newFile);
 
-  docQ.add({
-    userId: newFile.userId,
-    docId: newFile._id,
-  });
+  if (type === 'image') {
+    fileQueue.add({
+      userId: newFile.userId,
+      fileId: newFile._id,
+    });
+  }
   return res.status(201).json({
     id: newFile._id,
     userId: newFile.userId,
@@ -231,23 +233,31 @@ async function putUnpublish(req, res) {
 }
 
 async function getFile(req, res) {
+  const { token } = req.headers['x-token'];
+  const { size } = req.query;
   const { id } = req.params;
+
   const file = await dbClient.client.db().collection('files').findOne({ _id: ObjectId(id) });
   if (!file) return res.status(404).json({ error: 'Not found' });
 
   const { userId, isPublic, type } = file;
-  const key = `auth_${userId}`;
+  if (!token) return res.status.json({ error: 'Unauthorized' });
+  const key = `auth_${token}`;
   const user = await redisClient.get(key);
   if ((!user && !isPublic) || (user && userId !== user && !isPublic)) {
     return res.status(404).json({ error: 'Not found' });
   }
 
   if (type === 'folder') return res.status(400).json({ error: 'A folder doesn\'t have content' });
-
-  const path = file.localPath;
+  
+  const acceptedSizes = [500, 250, 100];
+  if (!size || !acceptedSizes.includes(parseInt(size))) {
+    return res.status(400).json({ error: 'Invalid size' });
+  }
+  const localPath = size ? `${file.localPath}_${size}` : file.localPath;
 
   try {
-    const data = fs.readFileSync(path);
+    const data = fs.readFileSync(localPath, { encoding: 'base64' });
     const mimeType = mime.contentType(file.name);
     res.setHeader('Content-Type', mimeType);
     return res.status(200).json(data);
